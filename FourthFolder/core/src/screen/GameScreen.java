@@ -5,11 +5,14 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.mazeproject.game.MazeProject;
 import entities.Asteroid;
 import entities.Bullet;
+import entities.Explosion;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -18,13 +21,19 @@ public class GameScreen implements Screen {
     float x;
     float y;
     int roll;
+    int score;
     float stateTime;
     float rollTimer;
     float shootTimer;
     float asteroidSpawnTimer;
+    float health = 1; //0 = dead, 1 = full health
 
     ArrayList<Bullet> bullets;
     ArrayList<Asteroid> asteroids;
+    ArrayList<Explosion> explosions;
+    Texture blank;
+
+    BitmapFont scoreFont;
 
     public static final int SHIP_WIDTH_PIXEL = 17;
     public static final int SHIP_HEIGHT_PIXEL = 32;
@@ -50,13 +59,17 @@ public class GameScreen implements Screen {
         this.game = game;
         y = 15;
         x = (float) MazeProject.WIDTH / 2 - (float) SHIP_WIDTH / 2;
+        score = 0;
 
         bullets = new ArrayList<>();
         asteroids = new ArrayList<>();
+        explosions = new ArrayList<>();
+        scoreFont = new BitmapFont(Gdx.files.internal("fonts/score.fnt"));
 
         random = new Random();
         asteroidSpawnTimer = random.nextFloat() * (MAX_ASTEROID_SPAWN_TIME - MIN_ASTEROID_SPAWN_TIME) + MIN_ASTEROID_SPAWN_TIME;
 
+        blank = new Texture("blank.png");
         roll = 2;
         rollTimer = 0;
         shootTimer = 0;
@@ -118,7 +131,6 @@ public class GameScreen implements Screen {
                 asteroidsToRemove.add(asteroid);
             }
         }
-        asteroids.removeAll(asteroidsToRemove);
         //Update bullets
         ArrayList<Bullet> bulletsToRemove = new ArrayList<>();
         for(Bullet bullet: bullets) {
@@ -127,7 +139,14 @@ public class GameScreen implements Screen {
                 bulletsToRemove.add(bullet);
             }
         }
-        bullets.removeAll(bulletsToRemove);
+        //update explosions
+        ArrayList<Explosion> explosionsToRemove = new ArrayList<>();
+        for(Explosion explosion: explosions) {
+            explosion.update(delta);
+            if(explosion.remove) {
+                explosionsToRemove.add(explosion);
+            }
+        }
 
         //Movement code
         if(Gdx.input.isKeyPressed(Input.Keys.LEFT) && x >= 0) {
@@ -175,15 +194,37 @@ public class GameScreen implements Screen {
                 roll--;
             }
         }
+        //After all updates check for collisions
+        for(Bullet bullet : bullets) {
+            for(Asteroid asteroid : asteroids) {
+                if(bullet.getCollisionRect().collidesWith(asteroid.getCollisionRect())) { //Collision occurred
+                    bulletsToRemove.add(bullet);
+                    asteroidsToRemove.add(asteroid);
+                    explosions.add(new Explosion(asteroid.getX(), asteroid.getY()));
+                    score += 100;
+                }
+            }
+        }
+        asteroids.removeAll(asteroidsToRemove);
+        bullets.removeAll(bulletsToRemove);
+        explosions.removeAll(explosionsToRemove);
+
+
+
         stateTime += delta;
 
         game.batch.begin();
 
+        GlyphLayout scoreLayout = new GlyphLayout(scoreFont, score + "");
+        scoreFont.draw(game.batch, scoreLayout, (float) Gdx.graphics.getWidth() / 2 - scoreLayout.width / 2, Gdx.graphics.getHeight() - scoreLayout.height - 10);
         for(Bullet bullet: bullets) {
             bullet.render(game.batch);
         }
         for(Asteroid asteroid: asteroids) {
             asteroid.render(game.batch);
+        }
+        for(Explosion explosion: explosions) {
+            explosion.render(game.batch);
         }
         game.batch.draw((TextureRegion) rolls[roll].getKeyFrame(stateTime,true), x, y, SHIP_WIDTH, SHIP_HEIGHT);
 
