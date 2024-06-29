@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.mazeproject.game.MazeProject;
+import tools.ScrollingBackground;
 
 public class GameOverScreen implements Screen {
     MazeProject game;
@@ -41,6 +42,9 @@ public class GameOverScreen implements Screen {
         gameOverBanner = new Texture("game_over.png");
         scorefont = new BitmapFont(Gdx.files.internal("fonts/score.fnt"));
 
+        game.scrollingBackground.setSpeedFixed(true);
+        game.scrollingBackground.setSpeed(ScrollingBackground.DEFAULT_SPEED);
+
     }
     @Override
     public void show() {
@@ -50,6 +54,9 @@ public class GameOverScreen implements Screen {
     public void render(float delta) {
         ScreenUtils.clear(0, 0, 0, 1);
         game.batch.begin();
+
+        game.scrollingBackground.updateAndRender(delta,game.batch);
+
 
         game.batch.draw(gameOverBanner, (float) Gdx.graphics.getWidth() / 2 - (float) BANNER_WIDTH / 2,
                 Gdx.graphics.getHeight() - BANNER_HEIGHT - 15,

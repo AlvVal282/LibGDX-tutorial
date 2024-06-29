@@ -86,6 +86,7 @@ public class GameScreen implements Screen {
         rolls[3] = new Animation(SHIP_ANIMATION_SPEED, rollSpriteSheet[3]);
         rolls[4] = new Animation(SHIP_ANIMATION_SPEED, rollSpriteSheet[4]);// All Right
 
+        game.scrollingBackground.setSpeedFixed(false);
     }
     @Override
     public void show() {
@@ -232,6 +233,8 @@ public class GameScreen implements Screen {
         stateTime += delta;
 
         game.batch.begin();
+
+        game.scrollingBackground.updateAndRender(delta,game.batch);
 
         GlyphLayout scoreLayout = new GlyphLayout(scoreFont, score + "");
         scoreFont.draw(game.batch, scoreLayout, (float) Gdx.graphics.getWidth() / 2 - scoreLayout.width / 2, Gdx.graphics.getHeight() - scoreLayout.height - 10);
