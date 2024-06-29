@@ -3,6 +3,7 @@ package screen;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -13,6 +14,7 @@ import com.mazeproject.game.MazeProject;
 import entities.Asteroid;
 import entities.Bullet;
 import entities.Explosion;
+import tools.CollisionRect;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -26,7 +28,7 @@ public class GameScreen implements Screen {
     float rollTimer;
     float shootTimer;
     float asteroidSpawnTimer;
-    float health = 1; //0 = dead, 1 = full health
+    float health = 1f; //0 = dead, 1 = full health
 
     ArrayList<Bullet> bullets;
     ArrayList<Asteroid> asteroids;
@@ -34,6 +36,7 @@ public class GameScreen implements Screen {
     Texture blank;
 
     BitmapFont scoreFont;
+    CollisionRect playerRect;
 
     public static final int SHIP_WIDTH_PIXEL = 17;
     public static final int SHIP_HEIGHT_PIXEL = 32;
@@ -65,6 +68,7 @@ public class GameScreen implements Screen {
         asteroids = new ArrayList<>();
         explosions = new ArrayList<>();
         scoreFont = new BitmapFont(Gdx.files.internal("fonts/score.fnt"));
+        playerRect = new CollisionRect(0, 0, SHIP_WIDTH, SHIP_HEIGHT);
 
         random = new Random();
         asteroidSpawnTimer = random.nextFloat() * (MAX_ASTEROID_SPAWN_TIME - MIN_ASTEROID_SPAWN_TIME) + MIN_ASTEROID_SPAWN_TIME;
@@ -194,6 +198,8 @@ public class GameScreen implements Screen {
                 roll--;
             }
         }
+        //After player moves, update playerRect
+        playerRect.move(x,y);
         //After all updates check for collisions
         for(Bullet bullet : bullets) {
             for(Asteroid asteroid : asteroids) {
@@ -202,6 +208,18 @@ public class GameScreen implements Screen {
                     asteroidsToRemove.add(asteroid);
                     explosions.add(new Explosion(asteroid.getX(), asteroid.getY()));
                     score += 100;
+                }
+            }
+        }
+        for(Asteroid asteroid: asteroids) {
+            if(asteroid.getCollisionRect().collidesWith(playerRect)) {
+                asteroidsToRemove.add(asteroid);
+                health -= 0.1f;
+
+                //If health is depleted, go to game over screen
+                if(health <= 0) {
+                    this.dispose();
+                    game.setScreen(new GameOverScreen(game, score));
                 }
             }
         }
@@ -226,6 +244,16 @@ public class GameScreen implements Screen {
         for(Explosion explosion: explosions) {
             explosion.render(game.batch);
         }
+
+        if(health > .6f) {
+            game.batch.setColor(Color.GREEN);
+        } else if (health > .2f) {
+            game.batch.setColor(Color.ORANGE);
+        } else {
+           game.batch.setColor(Color.RED);
+        }
+        game.batch.draw(blank, 0, 0, Gdx.graphics.getWidth() * health, 5 );
+        game.batch.setColor(Color.WHITE);
         game.batch.draw((TextureRegion) rolls[roll].getKeyFrame(stateTime,true), x, y, SHIP_WIDTH, SHIP_HEIGHT);
 
         game.batch.end();

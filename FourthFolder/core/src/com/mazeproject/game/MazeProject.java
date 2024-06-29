@@ -2,6 +2,7 @@ package com.mazeproject.game;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import screen.GameOverScreen;
 import screen.MainMenuScreen;
 
 public class MazeProject extends Game {
