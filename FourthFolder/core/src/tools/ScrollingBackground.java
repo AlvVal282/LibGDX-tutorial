@@ -10,13 +10,13 @@ public class ScrollingBackground {
     public static final int ACCELERATION = 50;
     public static final int GOAL_REACH_ACCELERATION = 80;
 
-    float imageScale;
-    boolean speedFixed;
+    private float imageScale;
+    private boolean speedFixed;
     Texture image;
-    float y1;
-    float y2;
+    private float y1;
+    private float y2;
     public static int speed; //In pixels / seconds
-    int goalSpeed;
+    private int goalSpeed;
 
 
     public ScrollingBackground() {
@@ -72,9 +72,6 @@ public class ScrollingBackground {
     }
     public void setSpeed(int speed) {
         this.speed = speed;
-    }
-    public int getSpeed() {
-        return speed;
     }
 }
 

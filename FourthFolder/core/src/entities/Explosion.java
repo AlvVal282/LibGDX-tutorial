@@ -12,9 +12,9 @@ public class Explosion {
     public static final int SIZE = 32;
 
     private static Animation<TextureRegion> anim = null;
-    float x;
-    float y;
-    float stateTime;
+    private final float x;
+    private final float y;
+    private float stateTime;
 
     public boolean remove = false;
 

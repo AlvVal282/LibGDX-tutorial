@@ -1,10 +1,10 @@
 package tools;
 
 public class CollisionRect {
-    float x;
-    float y;
-    int WIDTH;
-    int HEIGHT;
+    private float x;
+    private float y;
+    private final int WIDTH;
+    private final int HEIGHT;
 
     public CollisionRect (float x, float y, int WIDTH, int HEIGHT) {
         this.x = x;

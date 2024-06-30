@@ -13,10 +13,10 @@ public class Bullet {
 
     private static Texture texture;
 
-    float x;
-    float y;
+    private final float x;
+    private float y;
 
-    CollisionRect rect;
+    final CollisionRect rect;
     public boolean remove = false;
 
     public Bullet(float x) {

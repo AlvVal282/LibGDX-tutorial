@@ -8,9 +8,9 @@ public class DesktopLauncher {
 	public static void main (String[] arg) {
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setForegroundFPS(60);
-		config.setWindowedMode(MazeProject.WIDTH, MazeProject.HEIGHT);
+		config.setWindowedMode(com.mazeproject.game.MazeProject.WIDTH, com.mazeproject.game.MazeProject.HEIGHT);
 		config.setResizable(false);
 		config.setTitle("mazeproject");
-		new Lwjgl3Application(new MazeProject(), config);
+		new Lwjgl3Application(new com.mazeproject.game.MazeProject(), config);
 	}
 }

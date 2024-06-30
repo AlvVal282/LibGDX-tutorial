@@ -20,43 +20,43 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class GameScreen implements Screen {
-    float x;
-    float y;
-    int roll;
-    int score;
-    float stateTime;
-    float rollTimer;
-    float shootTimer;
-    float asteroidSpawnTimer;
-    float health = 1f; //0 = dead, 1 = full health
+    // Player position and state variables
+    private float x;
+    private final float y;
+    private int roll;
+    private int score;
+    private float stateTime;
+    private float rollTimer;
+    private float shootTimer;
+    private float asteroidSpawnTimer;
+    private float health = 1f; // 0 = dead, 1 = full health
 
-    ArrayList<Bullet> bullets;
-    ArrayList<Asteroid> asteroids;
-    ArrayList<Explosion> explosions;
-    Texture blank;
+    // Entity lists
+    private final ArrayList<Bullet> bullets;
+    private final ArrayList<Asteroid> asteroids;
+    private final ArrayList<Explosion> explosions;
 
-    BitmapFont scoreFont;
-    CollisionRect playerRect;
+    // Assets
+    private final Texture blank;
+    private final BitmapFont scoreFont;
+    private final CollisionRect playerRect;
 
-    public static final int SHIP_WIDTH_PIXEL = 17;
-    public static final int SHIP_HEIGHT_PIXEL = 32;
-    public static final int SHIP_WIDTH = SHIP_WIDTH_PIXEL * 3;
-    public static final int SHIP_HEIGHT = SHIP_HEIGHT_PIXEL * 3;
-    public static final float SHIP_ANIMATION_SPEED = 0.5f;
-    public static final float ROLL_TIMER_SWITCH_TIME = 0.25f;
-    public static final float SHOOT_WAIT_TIME = 0.3f;
-    public static final float MIN_ASTEROID_SPAWN_TIME = 0.3f;
-    public static final float MAX_ASTEROID_SPAWN_TIME = 0.6f;
+    // Constants
+    private static final int SHIP_WIDTH_PIXEL = 17;
+    private static final int SHIP_HEIGHT_PIXEL = 32;
+    private static final int SHIP_WIDTH = SHIP_WIDTH_PIXEL * 3;
+    private static final int SHIP_HEIGHT = SHIP_HEIGHT_PIXEL * 3;
+    private static final float SHIP_ANIMATION_SPEED = 0.5f;
+    private static final float ROLL_TIMER_SWITCH_TIME = 0.25f;
+    private static final float SHOOT_WAIT_TIME = 0.3f;
+    private static final float MIN_ASTEROID_SPAWN_TIME = 0.3f;
+    private static final float MAX_ASTEROID_SPAWN_TIME = 0.6f;
 
+    private final Animation<TextureRegion>[] rolls;
+    private static final float SPEED = 300;
 
-
-
-
-    Animation[] rolls;
-    public static final float SPEED = 300;
-
-    Random random;
-    MazeProject game;
+    private final Random random;
+    private final MazeProject game;
 
     public GameScreen(MazeProject game) {
         this.game = game;
@@ -80,131 +80,157 @@ public class GameScreen implements Screen {
         rolls = new Animation[5];
 
         TextureRegion[][] rollSpriteSheet = TextureRegion.split(new Texture("ship.png"), SHIP_WIDTH_PIXEL, SHIP_HEIGHT_PIXEL);
-        rolls[0] = new Animation(SHIP_ANIMATION_SPEED, rollSpriteSheet[2]); //All left
-        rolls[1] = new Animation(SHIP_ANIMATION_SPEED, rollSpriteSheet[1]);
-        rolls[2] = new Animation(SHIP_ANIMATION_SPEED, rollSpriteSheet[0]);//No Tilt
-        rolls[3] = new Animation(SHIP_ANIMATION_SPEED, rollSpriteSheet[3]);
-        rolls[4] = new Animation(SHIP_ANIMATION_SPEED, rollSpriteSheet[4]);// All Right
+        rolls[0] = new Animation<>(SHIP_ANIMATION_SPEED, rollSpriteSheet[2]); // All left
+        rolls[1] = new Animation<>(SHIP_ANIMATION_SPEED, rollSpriteSheet[1]);
+        rolls[2] = new Animation<>(SHIP_ANIMATION_SPEED, rollSpriteSheet[0]); // No Tilt
+        rolls[3] = new Animation<>(SHIP_ANIMATION_SPEED, rollSpriteSheet[3]);
+        rolls[4] = new Animation<>(SHIP_ANIMATION_SPEED, rollSpriteSheet[4]); // All Right
 
         game.scrollingBackground.setSpeedFixed(false);
     }
+
     @Override
     public void show() {
-
     }
 
-    /**
-     * Called when the screen should render itself.
-     *
-     * @param delta The time in seconds since the last render.
-     */
     @Override
     public void render(float delta) {
         ScreenUtils.clear(0, 0, 0, 1);
-        //Shooter Code
+
+        // Shooter code
+        handleShooting(delta);
+
+        // Asteroids spawning
+        handleAsteroidSpawning(delta);
+
+        // Update entities
+        updateEntities(delta);
+
+        // Player movement
+        handlePlayerMovement(delta);
+
+        // Collision detection
+        detectCollisions();
+
+        // Rendering
+        renderGame(delta);
+    }
+
+    private void handleShooting(float delta) {
         shootTimer += delta;
-        if(Gdx.input.isKeyPressed(Input.Keys.SPACE) && shootTimer >= SHOOT_WAIT_TIME) {
+        if (Gdx.input.isKeyPressed(Input.Keys.SPACE) && shootTimer >= SHOOT_WAIT_TIME) {
             shootTimer = 0;
             int offset;
             switch (roll) {
                 case 0:
-                    case 4:
-                        offset = 16;
-                        break;
+                case 4:
+                    offset = 16;
+                    break;
                 case 1:
-                    case 3:
-                        offset = 8;
-                        break;
-                        default:
-                            offset = 4;
-                                break;
-        }
+                case 3:
+                    offset = 8;
+                    break;
+                default:
+                    offset = 4;
+                    break;
+            }
             bullets.add(new Bullet(x + offset));
             bullets.add(new Bullet(x + SHIP_WIDTH - offset));
         }
-        //asteroids
+    }
+
+    private void handleAsteroidSpawning(float delta) {
         asteroidSpawnTimer -= delta;
-        if(asteroidSpawnTimer <= 0) {
+        if (asteroidSpawnTimer <= 0) {
             asteroidSpawnTimer = random.nextFloat() * (MAX_ASTEROID_SPAWN_TIME - MIN_ASTEROID_SPAWN_TIME) + MIN_ASTEROID_SPAWN_TIME;
             asteroids.add(new Asteroid(random.nextInt(MazeProject.WIDTH - Asteroid.WIDTH)));
         }
-        //update asteroids
+    }
+
+    private void updateEntities(float delta) {
         ArrayList<Asteroid> asteroidsToRemove = new ArrayList<>();
-        for(Asteroid asteroid: asteroids) {
+        for (Asteroid asteroid : asteroids) {
             asteroid.update(delta);
-            if(asteroid.remove) {
+            if (asteroid.remove) {
                 asteroidsToRemove.add(asteroid);
             }
         }
-        //Update bullets
+
         ArrayList<Bullet> bulletsToRemove = new ArrayList<>();
-        for(Bullet bullet: bullets) {
+        for (Bullet bullet : bullets) {
             bullet.update(delta);
-            if(bullet.remove) {
+            if (bullet.remove) {
                 bulletsToRemove.add(bullet);
             }
         }
-        //update explosions
+
         ArrayList<Explosion> explosionsToRemove = new ArrayList<>();
-        for(Explosion explosion: explosions) {
+        for (Explosion explosion : explosions) {
             explosion.update(delta);
-            if(explosion.remove) {
+            if (explosion.remove) {
                 explosionsToRemove.add(explosion);
             }
         }
 
-        //Movement code
-        if(Gdx.input.isKeyPressed(Input.Keys.LEFT) && x >= 0) {
-            x -= SPEED * Gdx.graphics.getDeltaTime();
+        asteroids.removeAll(asteroidsToRemove);
+        bullets.removeAll(bulletsToRemove);
+        explosions.removeAll(explosionsToRemove);
+    }
 
-            //update roll if button just clicked
-            if(Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && !Gdx.input.isKeyPressed(Input.Keys.RIGHT) && roll > 0) { //left
+    private void handlePlayerMovement(float delta) {
+        boolean movingLeft = Gdx.input.isKeyPressed(Input.Keys.LEFT) && x >= 0;
+        boolean movingRight = Gdx.input.isKeyPressed(Input.Keys.RIGHT) && x <= MazeProject.WIDTH - SHIP_WIDTH;
+
+        if (movingLeft) {
+            x -= SPEED * delta;
+            if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && roll > 0) {
                 rollTimer = 0;
                 roll--;
             }
 
-            //update roll
-            rollTimer -= Gdx.graphics.getDeltaTime();
-            if(Math.abs(rollTimer) > ROLL_TIMER_SWITCH_TIME && roll > 0) {
+            rollTimer -= delta;
+            if (Math.abs(rollTimer) > ROLL_TIMER_SWITCH_TIME && roll > 0) {
                 rollTimer -= ROLL_TIMER_SWITCH_TIME;
                 roll--;
             }
-        } else if(roll < 2) {
-            //update to make it go back to center
-            rollTimer += Gdx.graphics.getDeltaTime();
-            if(Math.abs(rollTimer) > ROLL_TIMER_SWITCH_TIME && roll < 4) {
+        } else if (roll < 2) {
+            rollTimer += delta;
+            if (Math.abs(rollTimer) > ROLL_TIMER_SWITCH_TIME) {
                 rollTimer -= ROLL_TIMER_SWITCH_TIME;
                 roll++;
             }
         }
 
-        if(Gdx.input.isKeyPressed(Input.Keys.RIGHT) && x <= MazeProject.WIDTH - SHIP_WIDTH) {
-            x += SPEED * Gdx.graphics.getDeltaTime();
-
-            //update roll if button just clicked
-            if(Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) && !Gdx.input.isKeyPressed(Input.Keys.LEFT) && roll < 4) { //right
+        if (movingRight) {
+            x += SPEED * delta;
+            if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) && roll < 4) {
                 rollTimer = 0;
                 roll++;
             }
 
-            rollTimer += Gdx.graphics.getDeltaTime();
-            if(Math.abs(rollTimer) > ROLL_TIMER_SWITCH_TIME && roll < 4) {
+            rollTimer += delta;
+            if (Math.abs(rollTimer) > ROLL_TIMER_SWITCH_TIME && roll < 4) {
                 rollTimer -= ROLL_TIMER_SWITCH_TIME;
                 roll++;
             }
-        } else if(roll > 2) {
-            rollTimer -= Gdx.graphics.getDeltaTime();
-            if(Math.abs(rollTimer) > ROLL_TIMER_SWITCH_TIME && roll > 0) {
+        } else if (roll > 2) {
+            rollTimer -= delta;
+            if (Math.abs(rollTimer) > ROLL_TIMER_SWITCH_TIME) {
                 rollTimer -= ROLL_TIMER_SWITCH_TIME;
                 roll--;
             }
         }
-        //After player moves, update playerRect
-        playerRect.move(x,y);
-        //After all updates check for collisions
-        for(Bullet bullet : bullets) {
-            for(Asteroid asteroid : asteroids) {
-                if(bullet.getCollisionRect().collidesWith(asteroid.getCollisionRect())) { //Collision occurred
+
+        playerRect.move(x, y);
+    }
+
+    private void detectCollisions() {
+        ArrayList<Asteroid> asteroidsToRemove = new ArrayList<>();
+        ArrayList<Bullet> bulletsToRemove = new ArrayList<>();
+
+        for (Bullet bullet : bullets) {
+            for (Asteroid asteroid : asteroids) {
+                if (bullet.getCollisionRect().collidesWith(asteroid.getCollisionRect())) {
                     bulletsToRemove.add(bullet);
                     asteroidsToRemove.add(asteroid);
                     explosions.add(new Explosion(asteroid.getX(), asteroid.getY()));
@@ -212,89 +238,76 @@ public class GameScreen implements Screen {
                 }
             }
         }
-        for(Asteroid asteroid: asteroids) {
-            if(asteroid.getCollisionRect().collidesWith(playerRect)) {
+
+        for (Asteroid asteroid : asteroids) {
+            if (asteroid.getCollisionRect().collidesWith(playerRect)) {
                 asteroidsToRemove.add(asteroid);
                 health -= 0.1f;
 
-                //If health is depleted, go to game over screen
-                if(health <= 0) {
+                if (health <= 0) {
                     this.dispose();
                     game.setScreen(new GameOverScreen(game, score));
                 }
             }
         }
+
         asteroids.removeAll(asteroidsToRemove);
         bullets.removeAll(bulletsToRemove);
-        explosions.removeAll(explosionsToRemove);
+    }
 
-
-
+    private void renderGame(float delta) {
         stateTime += delta;
-
         game.batch.begin();
-
-        game.scrollingBackground.updateAndRender(delta,game.batch);
+        game.scrollingBackground.updateAndRender(delta, game.batch);
 
         GlyphLayout scoreLayout = new GlyphLayout(scoreFont, score + "");
         scoreFont.draw(game.batch, scoreLayout, (float) Gdx.graphics.getWidth() / 2 - scoreLayout.width / 2, Gdx.graphics.getHeight() - scoreLayout.height - 10);
-        for(Bullet bullet: bullets) {
+
+        for (Bullet bullet : bullets) {
             bullet.render(game.batch);
         }
-        for(Asteroid asteroid: asteroids) {
+        for (Asteroid asteroid : asteroids) {
             asteroid.render(game.batch);
         }
-        for(Explosion explosion: explosions) {
+        for (Explosion explosion : explosions) {
             explosion.render(game.batch);
         }
 
-        if(health > .6f) {
+        renderHealthBar();
+
+        game.batch.draw(rolls[roll].getKeyFrame(stateTime, true), x, y, SHIP_WIDTH, SHIP_HEIGHT);
+        game.batch.end();
+    }
+
+    private void renderHealthBar() {
+        if (health > .6f) {
             game.batch.setColor(Color.GREEN);
         } else if (health > .2f) {
             game.batch.setColor(Color.ORANGE);
         } else {
-           game.batch.setColor(Color.RED);
+            game.batch.setColor(Color.RED);
         }
-        game.batch.draw(blank, 0, 0, Gdx.graphics.getWidth() * health, 5 );
+        game.batch.draw(blank, 0, 0, Gdx.graphics.getWidth() * health, 5);
         game.batch.setColor(Color.WHITE);
-        game.batch.draw((TextureRegion) rolls[roll].getKeyFrame(stateTime,true), x, y, SHIP_WIDTH, SHIP_HEIGHT);
-
-        game.batch.end();
     }
 
-    /**
-     * @param width
-     * @param height
-     */
     @Override
     public void resize(int width, int height) {
-
     }
 
-    /**
-     */
     @Override
     public void pause() {
-
     }
 
-    /**
-     */
     @Override
     public void resume() {
-
     }
 
     @Override
     public void hide() {
-
     }
 
-    /**
-     * Called when this screen should release all resources.
-     */
     @Override
     public void dispose() {
-
     }
 }

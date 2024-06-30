@@ -13,9 +13,6 @@ public class MazeProject extends Game {
 	public static final int WIDTH = 480;
 	public static final int HEIGHT = 720;
 
-	private OrthographicCamera cam;
-	private StretchViewport viewport;
-
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
